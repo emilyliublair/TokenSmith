@@ -2,6 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
+from src.instrumentation.profiler import time_it
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -62,6 +63,7 @@ class SectionRecursiveStrategy(ChunkStrategy):
     def artifact_folder_name(self) -> str:
         return "sections"
 
+    @time_it(stage_name="Langchain_Recursive_Split")
     def chunk(self, text: str) -> List[str]:
         """
         Recursively splits text into smaller chunks based on sentence boundaries.
@@ -106,6 +108,7 @@ class DocumentChunker:
                 chunk = chunk.replace(ph, t)
         return chunk
 
+    @time_it(stage_name="Recursive_Chunking")
     def chunk(self, text: str) -> List[str]:
         if not text:
             return []

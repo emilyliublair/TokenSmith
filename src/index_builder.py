@@ -20,6 +20,7 @@ from src.embedder import SentenceTransformer
 
 from src.preprocessing.chunking import DocumentChunker, ChunkConfig
 from src.preprocessing.extraction import extract_sections_from_markdown
+from src.instrumentation.profiler import time_it
 
 # ----- runtime parallelism knobs (avoid oversubscription) -----
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -202,20 +203,30 @@ def build_index(
         )
 
     # Step 3: Build FAISS index
-    print(f"Building FAISS index for {len(all_chunks):,} chunks...")
-    dim = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dim)
-    index.add(embeddings)
-    faiss.write_index(index, str(artifacts_dir / f"{index_prefix}.faiss"))
-    print(f"FAISS Index built successfully: {index_prefix}.faiss")
+    @time_it(stage_name="FAISS_Index_Build")
+    def _build_faiss_index():
+        print(f"Building FAISS index for {len(all_chunks):,} chunks...")
+        dim = embeddings.shape[1]
+        faiss_idx = faiss.IndexFlatL2(dim)
+        faiss_idx.add(embeddings)
+        faiss.write_index(faiss_idx, str(artifacts_dir / f"{index_prefix}.faiss"))
+        print(f"FAISS Index built successfully: {index_prefix}.faiss")
+        return faiss_idx
+    
+    index = _build_faiss_index() # Execute the wrapped function
 
     # Step 4: Build BM25 index
-    print(f"Building BM25 index for {len(all_chunks):,} chunks...")
-    tokenized_chunks = [preprocess_for_bm25(chunk) for chunk in all_chunks]
-    bm25_index = BM25Okapi(tokenized_chunks)
-    with open(artifacts_dir / f"{index_prefix}_bm25.pkl", "wb") as f:
-        pickle.dump(bm25_index, f)
-    print(f"BM25 Index built successfully: {index_prefix}_bm25.pkl")
+    @time_it(stage_name="BM25_Index_Build")
+    def _build_bm25_index():
+        print(f"Building BM25 index for {len(all_chunks):,} chunks...")
+        tokenized_chunks = [preprocess_for_bm25(chunk) for chunk in all_chunks]
+        bm25_idx = BM25Okapi(tokenized_chunks)
+        with open(artifacts_dir / f"{index_prefix}_bm25.pkl", "wb") as f:
+            pickle.dump(bm25_idx, f)
+        print(f"BM25 Index built successfully: {index_prefix}_bm25.pkl")
+        return bm25_idx
+        
+    bm25_index = _build_bm25_index() # Execute the wrapped function
 
     # Step 5: Dump index artifacts
     with open(artifacts_dir / f"{index_prefix}_chunks.pkl", "wb") as f:

@@ -6,7 +6,9 @@ import sys
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption, InputFormat
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
+from src.instrumentation.profiler import time_it
 
+@time_it(stage_name="Markdown_Extraction")
 def extract_sections_from_markdown(
     file_path: str,
     exclusion_keywords: List[str] = None
@@ -167,6 +169,7 @@ def extract_index_with_range_expansion(text_content):
     # Convert the dictionary to a nicely formatted JSON string
     return json.dumps(index_data, indent=2)
 
+@time_it(stage_name="PDF_to_Markdown_Conversion")
 def convert_and_save_with_page_numbers(input_file_path, output_file_path):
     """
     Converts a document to Markdown, iterating page by page

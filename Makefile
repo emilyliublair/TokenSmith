@@ -15,42 +15,42 @@ help:
 # Environment setup - installs all dependencies via conda
 env:
 	@echo "Creating TokenSmith conda environment..."
-	conda env create -f environment.yml -n tokensmith || conda env update -f environment.yml -n tokensmith
+	conda env create -f environment.yml -n tokensmith2 || conda env update -f environment.yml -n tokensmith2
 	@echo "Running platform-specific setup..."
-	conda run -n tokensmith bash scripts/setup_env.sh
+	conda run -n tokensmith2 bash scripts/setup_env.sh
 
 # Update environment from environment.yml
 update-env:
 	@echo "Updating TokenSmith conda environment..."
-	conda env update -f environment.yml -n tokensmith
+	conda env update -f environment.yml -n tokensmith2
 
 # Build llama.cpp if needed
 build-llama:
 	@echo "Checking for existing llama.cpp installation..."
-	conda run -n tokensmith python scripts/detect_llama.py || conda run -n tokensmith bash scripts/build_llama.sh
+	conda run -n tokensmith2 python scripts/detect_llama.py || conda run -n tokensmith2 bash scripts/build_llama.sh
 
 # Install package in development mode (no dependencies, they're from conda)
 install:
-	conda run -n tokensmith pip install -e . --no-deps
+	conda run -n tokensmith2 pip install -e . --no-deps
 
 # Full build process
 build: env install
-	@echo "TokenSmith build complete! Activate environment with: conda activate tokensmith"
+	@echo "TokenSmith build complete! Activate environment with: conda activate tokensmith2"
 
 # Show installed packages
 show-deps:
 	@echo "Installed conda packages:"
-	conda list -n tokensmith
+	conda list -n tokensmith2
 
 # Export current environment for sharing
 export-env:
 	@echo "Exporting environment to environment-lock.yml..."
-	conda env export -n tokensmith > environment-lock.yml
+	conda env export -n tokensmith2 > environment-lock.yml
 	@echo "Environment exported with exact versions."
 
 # Run tests
 test:
-	conda run -n tokensmith python -m pytest tests/ -v || echo "No tests found"
+	conda run -n tokensmith2 python -m pytest tests/ -v || echo "No tests found"
 
 # Clean
 clean:
@@ -61,15 +61,15 @@ clean:
 # PDF to Markdown extraction
 run-extract:
 	@echo "Extracting PDF to markdown (data/chapters/*.pdf -> data/*.md)"
-	conda run --no-capture-output -n tokensmith python -m src.preprocessing.extraction
+	conda run --no-capture-output -n tokensmith2 python -m src.preprocessing.extraction
 	
 # Run modes
 run-index:
 	@echo "Running TokenSmith index mode with additional CLI args: $(ARGS)"
-	conda run --no-capture-output -n tokensmith python -m src.main index $(ARGS)
+	conda run --no-capture-output -n tokensmith2 python -m src.main index $(ARGS)
 
 run-chat:
 	@echo "Running TokenSmith chat mode with additional CLI args: $(ARGS)"
 	@echo "Note: Chat mode requires interactive terminal. If this fails, use:"
-	@echo "  conda activate tokensmith && python -m src.main chat $(ARGS)"
-	conda run --no-capture-output -n tokensmith --no-capture-output python -m src.main chat $(ARGS)
+	@echo "  conda activate tokensmith2 && python -m src.main chat $(ARGS)"
+	conda run --no-capture-output -n tokensmith2 --no-capture-output python -m src.main chat $(ARGS)

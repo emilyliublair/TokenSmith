@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Union, Optional
 from llama_cpp import Llama
 from tqdm import tqdm
+from src.instrumentation.profiler import time_it
 
 # Global variables for worker processes
 _worker_model: Optional[Llama] = None
@@ -85,6 +86,7 @@ class SentenceTransformer:
             self._embedding_dimension = len(test_embedding)
         return self._embedding_dimension
 
+    @time_it(stage_name="Vector_Embedding_Generation")
     def encode(self, 
            texts: Union[str, List[str]], 
            batch_size: int = 16,  # Adjusted for 4B model

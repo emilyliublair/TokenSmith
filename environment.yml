@@ -1,4 +1,4 @@
-name: tokensmith
+name: tokensmith2
 channels:
   - conda-forge
   - defaults

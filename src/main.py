@@ -27,6 +27,7 @@ from src.retriever import (
     load_artifacts
 )
 from src.ranking.reranker import rerank
+from src.instrumentation.profiler import save_profile_report
 
 ANSWER_NOT_FOUND = "I'm sorry, but I don't have enough information to answer that question."
 
@@ -75,6 +76,7 @@ def run_index_mode(args: argparse.Namespace, cfg: RAGConfig):
         use_multiprocessing=args.multiproc_indexing,
         use_headings=args.embed_with_headings,
     )
+    save_profile_report()
 
 def use_indexed_chunks(question: str, chunks: list) -> list:
     # Logic for keyword matching from textbook index
