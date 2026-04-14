@@ -53,13 +53,14 @@ def _encode_batch_worker(texts: List[str]) -> List[List[float]]:
     return embeddings
 
 class SentenceTransformer:
-    def __init__(self, model_path: str, n_ctx: int = 4096, n_threads: int = None):
+    def __init__(self, model_path: str, n_ctx: int = 8192, n_batch: int = 8192, n_threads: int = None):
         """
         Initialize with a local GGUF model file path.
         
         Args:
             model_path: Path to your local .gguf file
-            n_ctx: Context window size (increased to match Qwen3 training context)
+            n_ctx: Context window size (Max tokens across all texts in a batch)
+            n_batch: Maximum number of prompt tokens to batch together when calling the GPU
             n_threads: Number of threads to use (None = auto-detect)
         """
         self.model_path = model_path
@@ -68,6 +69,7 @@ class SentenceTransformer:
         self.model = Llama(
             model_path=model_path,
             n_ctx=n_ctx,
+            n_batch=n_batch,
             n_threads=n_threads,
             embedding=True,
             verbose=True,
