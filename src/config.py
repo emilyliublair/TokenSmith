@@ -33,6 +33,9 @@ class RAGConfig:
     # generation
     max_gen_tokens: int = 400
     gen_model: str = "models/generators/qwen2.5-3b-instruct-q8_0.gguf"
+
+    # doc2query
+    use_doc2query: bool = False
     
     # testing
     system_prompt_mode: str = "baseline"

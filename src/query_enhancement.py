@@ -234,3 +234,70 @@ def contextualize_query(
         return query
         
     return rewritten
+
+def generate_doc2query_questions(
+    chunk_text: str,
+    model_path: str,
+    num_questions: int = 3,
+    max_tokens: int = 150,
+    **llm_kwargs
+) -> list[str]:
+    """
+    Doc2Query: Generates synthetic questions for a given text chunk.
+    These questions are appended to the document during index building 
+    to improve retrieval recall for complex or poorly phrased user queries.
+    """
+    prompt = textwrap.dedent(f"""\
+        <|im_start|>system
+        You are generating realistic search queries that students type when they are confused about a database concept.
+
+        Rules:
+        - Write exactly 5 questions, one per line
+        - First 3 questions: student has NO technical vocabulary. Use everyday words only. Focus on what they observe or want to do.
+        - Last 2 questions: student knows 1-2 terms but is confused about details.
+        - Never copy phrases from the text.
+        - Never output meta-commentary, labels, or formatting. Only output the 5 questions.
+
+        Good example output for a chunk about the LIKE operator:
+        How do I search for words that start with a certain letter in my database?
+        My query is returning everything instead of just matching names, what did I do wrong?
+        How do I find rows where a column contains a specific word somewhere in it?
+        How does pattern matching work in SQL with wildcards?
+        What is the difference between LIKE and equals when filtering string columns?
+
+        Bad example output (never do this):
+        Describe the GOAL or SYMPTOM in plain language
+        No technical terms from the text
+        What is a SYMPTOM in plain language?
+        <|im_end|>
+        <|im_start|>user
+        Text:
+        {chunk_text}
+        <|im_end|>
+        <|im_start|>assistant
+        """)
+
+    # Increase temperature to 0.7 or 0.8 for more diverse phrasing
+    output = run_llama_cpp(
+        prompt,
+        model_path,
+        max_tokens=500, 
+        temperature=0.8, 
+        **llm_kwargs
+    )
+
+    # Extract the generated text safely based on standard llama_cpp dictionary format
+    if isinstance(output, dict) and "choices" in output:
+        result_text = output["choices"][0]["text"].strip()
+    else:
+        result_text = str(output).strip()
+    
+    # Clean the output and strip any bullet points or numbers the LLM might have added
+    raw_questions = result_text.split('\n')
+    cleaned_questions = [
+        q.lstrip("-*1234567890. ").strip() 
+        for q in raw_questions 
+        if q.strip()
+    ]
+    
+    return cleaned_questions[:num_questions]

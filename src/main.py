@@ -54,6 +54,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="a list of chapter numbers to index (e.g., --chapters 3 4 5)"
     )
+    indexing_group.add_argument(
+        "--use_doc2query",
+        action="store_true",
+        help="enable doc2query synthetic question generation during indexing"
+    )
     parser.add_argument(
         "--double_prompt",
         action="store_true",
@@ -88,8 +93,10 @@ def run_index_mode(args: argparse.Namespace, cfg: RAGConfig):
         use_multiprocessing=args.multiproc_indexing,
         use_headings=args.embed_with_headings,
         chapters_to_index=args.chapters,
+        use_doc2query=getattr(args, "use_doc2query", cfg.use_doc2query),
+        gen_model_path=cfg.gen_model,
     )
-    save_profile_report()
+    save_profile_report(index_prefix=args.index_prefix)
 
 def run_add_chapters_mode(args: argparse.Namespace, cfg: RAGConfig):
     """Handles the logic for adding chapters to an existing index."""

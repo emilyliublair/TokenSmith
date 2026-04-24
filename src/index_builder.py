@@ -42,7 +42,9 @@ def build_index(
     index_prefix: str,
     use_multiprocessing: bool = False,
     use_headings: bool = False,
-    chapters_to_index: Optional[List[int]] = None
+    chapters_to_index: Optional[List[int]] = None,
+    use_doc2query: bool = False,
+    gen_model_path: Optional[str] = None,
 ) -> None:
     """
     Extract sections, chunk, embed, and build both FAISS and BM25 indexes.
@@ -56,8 +58,13 @@ def build_index(
         - {prefix}_page_to_chunk_map.json
     """
     all_chunks: List[str] = []
+    faiss_texts: List[str] = []
+    bm25_texts: List[str] = []
     sources: List[str] = []
     metadata: List[Dict] = []
+
+    # FOR LOGGING PURPOSES ONLY
+    doc2query_log: Dict[int, List[str]] = {}
 
     sections = extract_sections_from_markdown(
         markdown_file,
@@ -113,6 +120,30 @@ def build_index(
             if c["heading"] == "Introduction":
                 continue
 
+            expanded_text = clean_chunk
+
+            if use_doc2query and gen_model_path:
+                @time_it(stage_name="Doc2Query_Generation")
+                def _generate_synthetic_queries():
+                    from src.query_enhancement import generate_doc2query_questions
+                    return generate_doc2query_questions(clean_chunk, gen_model_path)
+                
+                try:
+                    synthetic_queries = _generate_synthetic_queries()
+                    if synthetic_queries:
+                        def _is_useful_question(question: str, chunk: str, min_overlap: int = 2) -> bool:
+                            stopwords = {"the", "a", "an", "is", "in", "of", "to", "and", "or", "for", "with"}
+                            chunk_words = {w.lower().strip('.,?!') for w in chunk.split() if w.lower() not in stopwords}
+                            q_words = {w.lower().strip('.,?!') for w in question.split() if w.lower() not in stopwords}
+                            return len(chunk_words & q_words) >= min_overlap
+
+                        synthetic_queries = [q.strip() for q in synthetic_queries if len(q.strip().split()) >= 6]
+                        doc2query_log[total_chunks + sub_chunk_id] = synthetic_queries
+
+                        expanded_text = clean_chunk + "\n\n" + "\n".join(synthetic_queries)
+                except Exception as e:
+                    print(f"Warning: Doc2Query failed for chunk {total_chunks + sub_chunk_id}: {e}")
+
             meta = {
                 "filename": markdown_file,
                 "mode": chunk_config.to_string(),
@@ -130,9 +161,18 @@ def build_index(
                 if use_headings else ""
             )
 
-            all_chunks.append(chunk_prefix + clean_chunk)
+            original_idx = len(all_chunks)
+
+            display_chunk = chunk_prefix + clean_chunk
+            
+            search_chunk = chunk_prefix + expanded_text 
+
+            all_chunks.append(display_chunk) 
             sources.append(markdown_file)
             metadata.append(meta)
+            
+            faiss_texts.append(search_chunk)
+            bm25_texts.append(search_chunk)
 
         total_chunks += len(sub_chunks)
 
@@ -159,7 +199,7 @@ def build_index(
         pool = embedder.start_multi_process_pool(workers=4)
         try:
             embeddings = embedder.encode_multi_process(
-                all_chunks,
+                faiss_texts,
                 pool,
                 batch_size=4,
             )
@@ -167,9 +207,9 @@ def build_index(
             embedder.stop_multi_process_pool(pool)
     else:
         embeddings = embedder.encode(
-            all_chunks, 
-            batch_size=128,
-            show_progress_bar=True,
+            faiss_texts, 
+            batch_size=16, 
+            show_progress_bar=True
         )
 
     # Step 3: Build FAISS index
@@ -189,7 +229,7 @@ def build_index(
     @time_it(stage_name="BM25_Index_Build")
     def _build_bm25_index():
         print(f"Building BM25 index for {len(all_chunks):,} chunks...")
-        tokenized_chunks = [preprocess_for_bm25(chunk) for chunk in all_chunks]
+        tokenized_chunks = [preprocess_for_bm25(chunk) for chunk in bm25_texts]
         bm25_idx = BM25Okapi(tokenized_chunks)
         with open(artifacts_dir / f"{index_prefix}_bm25.pkl", "wb") as f:
             pickle.dump(bm25_idx, f)
@@ -220,6 +260,12 @@ def build_index(
     with open(output_file, "w") as f:
         json.dump(index_info, f, indent=2)
     print(f"Saved index information: {output_file}")
+
+    if use_doc2query and doc2query_log:
+        log_file = artifacts_dir / f"{index_prefix}_doc2query_samples.json"
+        with open(log_file, "w") as f:
+            json.dump(doc2query_log, f, indent=4)
+        print(f"Saved Doc2Query generated questions to: {log_file}")
 
 # ------------------------ Helper functions ------------------------------
 
