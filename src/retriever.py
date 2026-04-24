@@ -21,6 +21,7 @@ from src.embedder import CachedEmbedder
 
 from src.config import RAGConfig
 from src.index_builder import preprocess_for_bm25
+from src.instrumentation.profiler import time_it
 
 
 # -------------------------- Embedder cache ------------------------------
@@ -93,6 +94,7 @@ class FAISSRetriever(Retriever):
         self.index = index
         self.embedder = _get_embedder(embed_model)
 
+    @time_it(stage_name="Retrieval_FAISS")
     def get_scores(self,
                 query: str,
                 pool_size: int,
@@ -131,6 +133,7 @@ class BM25Retriever(Retriever):
     def __init__(self, index):
         self.index = index
 
+    @time_it(stage_name="Retrieval_BM25")
     def get_scores(self,
                  query: str,
                  pool_size: int,
@@ -213,6 +216,7 @@ class IndexKeywordRetriever(Retriever):
             with open(page_to_chunk_map_path, 'r') as f:
                 self.page_to_chunk_map = json.load(f)
     
+    @time_it(stage_name="Retrieval_Index_Keywords")
     def get_scores(self, query: str, pool_size: int, chunks: List[str]) -> Dict[int, float]:
         """
         Returns scores for chunks that match index keywords.
