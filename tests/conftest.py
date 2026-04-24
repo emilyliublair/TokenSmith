@@ -161,7 +161,7 @@ def config(pytestconfig):
         "output_mode": pytestconfig.getoption("--output-mode") or cfg.get("output_mode", "terminal"),
         
         # Models
-        "model_path": pytestconfig.getoption("--model-path") or cfg.get("model_path", "models/generators/qwen2.5-3b-instruct-q8_0.gguf"),
+        "model_path": pytestconfig.getoption("--model-path") or cfg.get("model_path", "models/generators/qwen2.5-1.5b-instruct-q8_0.gguf"),
         "embed_model": pytestconfig.getoption("--embed-model") or cfg.get("embed_model", os.path.join(Path(__file__).parent.parent, "models", "embedders", "Qwen3-Embedding-4B-Q8_0.gguf")),
         
         # Generator

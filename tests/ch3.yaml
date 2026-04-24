@@ -1,0 +1,99 @@
+benchmarks:
+  - id: "char_vs_varchar"
+    question: "What is the difference between char and varchar data types in SQL?"
+    expected_answer: "The char(n) type stores fixed-length character strings by appending spaces to make the string exactly n characters long. In contrast, varchar(n) stores variable-length strings without adding extra spaces, making it recommended to avoid unexpected behavior during string comparisons."
+    keywords: ["char", "varchar", "fixed-length", "variable-length", "spaces", "appended", "comparison"]
+    similarity_threshold: 0.80
+    ideal_retrieved_chunks: [50, 51, 63, 64, 65]
+
+  - id: "sql_three_valued_logic"
+    question: "How does SQL evaluate comparisons that involve a null value?"
+    expected_answer: "SQL treats the result of any comparison involving a null value as 'unknown', introducing a third logical value alongside true and false. If a where clause predicate evaluates to either false or unknown, the tuple is not added to the result."
+    keywords: ["null", "unknown", "comparison", "three-valued logic", "true", "false", "predicate"]
+    similarity_threshold: 0.82
+    ideal_retrieved_chunks: [609, 612, 613, 618, 619]
+
+  - id: "aggregate_null_handling"
+    question: "How do SQL aggregate functions handle null values in their input?"
+    expected_answer: "All standard SQL aggregate functions except count(*) ignore null values in their input collection. If the input collection is empty as a result of ignoring nulls, count returns 0, while all other aggregate operations return a value of null."
+    keywords: ["aggregate functions", "null values", "ignore", "count(*)", "empty collection", "sum", "average"]
+    similarity_threshold: 0.85
+    ideal_retrieved_chunks: [758, 759, 760, 756, 757]
+
+  - id: "having_vs_where"
+    question: "What is the purpose of the having clause compared to the where clause?"
+    expected_answer: "The having clause is used to apply predicates and conditions to groups of tuples after they have been formed by the group by clause, and it allows the use of aggregate functions. The where clause, conversely, applies predicates to individual tuples before any grouping takes place."
+    keywords: ["having clause", "where clause", "group by", "groups", "aggregate functions", "predicates", "tuples"]
+    similarity_threshold: 0.78
+    ideal_retrieved_chunks: [725, 728, 730, 739, 741]
+
+  - id: "union_duplicates"
+    question: "What is the difference between the UNION and UNION ALL operations?"
+    expected_answer: "The union operation automatically eliminates duplicate tuples from its result set. If a user wishes to retain all duplicates from both input relations, they must explicitly use the union all operation instead."
+    keywords: ["union", "union all", "duplicates", "eliminate", "retain", "set operations", "intersect"]
+    similarity_threshold: 0.75
+    ideal_retrieved_chunks: [535, 536, 539, 547, 548]
+
+  - id: "sql_exists_construct"
+    question: "What does the exists construct do when used with a nested subquery?"
+    expected_answer: "The exists construct is a Boolean function used to test whether a subquery has any tuples in its result, returning true if the argument subquery is nonempty. It is often used in correlated subqueries to check for overlapping data between relations."
+    keywords: ["exists", "not exists", "subquery", "nonempty", "empty", "tuples", "boolean"]
+    similarity_threshold: 0.76
+    ideal_retrieved_chunks: [874, 875, 876, 889, 890]
+
+  - id: "update_case_statement"
+    question: "Why might a case construct be preferred over multiple update statements?"
+    expected_answer: "A case construct allows for multiple conditional updates within a single update statement, avoiding order-dependent problems where executing one update statement might inadvertently change values that affect the criteria of subsequent update statements."
+    keywords: ["update", "case", "order", "multiple updates", "condition", "single statement", "when", "then"]
+    similarity_threshold: 0.82
+    ideal_retrieved_chunks: [1184, 1185, 1188, 1195, 1204]
+
+  - id: "with_clause_purpose"
+    question: "What is the function of the with clause in an SQL query?"
+    expected_answer: "The with clause provides a way to define a temporary relation or view whose definition is available only to the specific query in which it occurs. This makes complex query logic clearer and allows the temporary relation to be used in multiple places within that single query."
+    keywords: ["with clause", "temporary relation", "query logic", "multiple places", "definition", "subquery"]
+    similarity_threshold: 0.77
+    ideal_retrieved_chunks: [1001, 1002, 1011, 1012, 1016]
+  
+  - id: "vague_string_comparison"
+    question: "Why is my database returning false when I compare two identical words?"
+    expected_answer: "When comparing char and varchar types, extra spaces might not be added to the varchar type depending on the database system, causing identical words to evaluate to false."
+    keywords: ["char", "varchar", "spaces", "comparison"]
+    similarity_threshold: 0.75
+
+  - id: "vague_aggregation"
+    question: "Why did my average calculation come out wrong when someone didn't enter a value?"
+    expected_answer: "Aggregate functions ignore null values. This means the collection of values might be smaller than expected, affecting the denominator of an average."
+    keywords: ["aggregate", "ignore", "null"]
+    similarity_threshold: 0.75
+
+  - id: "vague_update_order"
+    question: "How do I give different raises to different employees without messing up the math by doing it in the wrong order?"
+    expected_answer: "Use a case construct within a single update statement to handle multiple conditions simultaneously without order-dependent side effects."
+    keywords: ["case", "update", "single statement", "condition"]
+    similarity_threshold: 0.75
+
+  - id: "super_vague_cartesian"
+    question: "Why did my computer completely freeze and crash when I tried to query two tables at the same time?"
+    expected_answer: "If you omit the where clause condition, it outputs the Cartesian product, which could be a huge relation (e.g. 120,000 tuples) that overwhelms the system."
+    keywords: ["cartesian product", "huge relation", "where clause", "omit"]
+    similarity_threshold: 0.75
+
+  - id: "super_vague_self_join"
+    question: "How do I make the system think there are two distinct copies of the exact same dataset so I can match records against themselves?"
+    expected_answer: "You use the 'as' clause to rename the relation, creating a correlation name or table alias so you can compare tuples in the same relation."
+    keywords: ["rename", "as clause", "correlation name", "alias", "compare tuples"]
+    similarity_threshold: 0.75
+
+  - id: "super_vague_escape_char"
+    question: "I am trying to search for a literal underscore symbol in my text field, but it keeps returning every single character instead. How do I fix this?"
+    expected_answer: "You must define an escape character for the 'like' comparison using the escape keyword to treat the special pattern character as a normal character."
+    keywords: ["escape character", "escape keyword", "pattern", "like"]
+    similarity_threshold: 0.75
+
+  - id: "super_vague_groupby_error"
+    question: "The database is throwing a weird error saying my column isn't aggregated, but I just want to print the student's ID next to the department average."
+    expected_answer: "Any attribute that is not present in the group by clause may appear in the select clause only as an argument to an aggregate function, otherwise the query is erroneous."
+    keywords: ["group by", "select clause", "erroneous", "aggregate"]
+    similarity_threshold: 0.75
+  
